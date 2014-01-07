@@ -1,5 +1,6 @@
 import pygame, sys
 import argparse
+import math
 
 from pygame.locals import *
 
@@ -54,6 +55,7 @@ class Spreed(object):
 
         # init state variables
         self.running = True
+        self.show_progress = True
         self.pause = True 
         self.word = 0
 
@@ -72,6 +74,8 @@ class Spreed(object):
                         self.running = False
                     if event.key == K_q:
                         self.running = False
+                    if event.key == K_p:
+                        self.show_progress = not self.show_progress
                     if event.key == K_SPACE:
                         self.pause = not self.pause
                     if event.key == K_LEFT:
@@ -92,6 +96,10 @@ class Spreed(object):
                                 centery=self.screen.get_height()/2)
             self.screen.blit(self.text, self.textpos)
 
+            # draw progress bar
+            if self.show_progress:
+                self.draw_progress()
+
             # update screen
             pygame.display.flip()
 
@@ -103,6 +111,18 @@ class Spreed(object):
                 time = pygame.time.get_ticks() 
                 self.word += 1
                 self.word %= len(self.words) # loop at end
+
+    def draw_progress(self):
+        dist = len(self.words)/40
+    
+        offset_x = self.screen.get_width() / 10
+        offset_y = self.screen.get_height() - (self.screen.get_height() / 8)
+        w = (self.screen.get_width() - 2 * offset_x) / 80
+        h = 2 * w 
+    
+        for i in range(math.ceil(self.word/dist)):
+            rect = pygame.Rect(offset_x + i * 2 * w, offset_y, w, h)
+            pygame.draw.rect(self.screen, pygame.Color("white"), rect, 2)
 
 if __name__ == '__main__':
     spreed = Spreed()
