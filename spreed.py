@@ -65,6 +65,9 @@ class Spreed(object):
 
         # main loop
         while self.running:
+            # current percentage of reading
+            percent = int(len(self.words)/100)
+
             # event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: 
@@ -84,6 +87,26 @@ class Spreed(object):
                         self.word += 1
                     if event.key == K_0:
                         self.word = 0
+                    if event.key == K_1:
+                        self.word = percent * 10 
+                    if event.key == K_2:
+                        self.word = percent * 20
+                    if event.key == K_3:
+                        self.word = percent * 30
+                    if event.key == K_4:
+                        self.word = percent * 40 
+                    if event.key == K_5:
+                        self.word = percent * 50
+                    if event.key == K_6:
+                        self.word = percent * 60
+                    if event.key == K_7:
+                        self.word = percent * 70
+                    if event.key == K_8:
+                        self.word = percent * 80
+                    if event.key == K_9:
+                        self.word = percent * 90
+
+            self.word %= len(self.words)
 
             # clear screen
             self.screen.fill((0, 0, 0))
@@ -106,23 +129,31 @@ class Spreed(object):
             # get time
             newtime = pygame.time.get_ticks() 
 
+            if self.word == len(self.words) - 1:
+                self.pause = True
+
             # advance word
             if not self.pause and newtime - time > 1000/(self.speed/60):
                 time = pygame.time.get_ticks() 
                 self.word += 1
-                self.word %= len(self.words) # loop at end
 
     def draw_progress(self):
-        dist = len(self.words)/40
-    
-        offset_x = self.screen.get_width() / 10
-        offset_y = self.screen.get_height() - (self.screen.get_height() / 8)
-        w = (self.screen.get_width() - 2 * offset_x) / 80
-        h = 2 * w 
-    
-        for i in range(math.ceil(self.word/dist)):
-            rect = pygame.Rect(offset_x + i * 2 * w, offset_y, w, h)
-            pygame.draw.rect(self.screen, pygame.Color("white"), rect, 2)
+        # current progress
+        ratio = self.word / len(self.words)
+
+        # progress bar coordinates
+        bar_x = self.screen.get_width() / 10
+        bar_y = self.screen.get_height() - (self.screen.get_height() / 8)
+        bar_w = self.screen.get_width() - 2 * bar_x 
+        bar_h = bar_w / 30
+        
+        # progress bar frame
+        outer_rect = pygame.Rect(bar_x, bar_y, bar_w, bar_h)
+        inner_rect = pygame.Rect(bar_x, bar_y, max(bar_w * ratio, 1), bar_h)
+
+        # draw the frame
+        pygame.draw.rect(self.screen, pygame.Color("white"), outer_rect, 2)
+        pygame.draw.rect(self.screen, pygame.Color("white"), inner_rect)
 
 if __name__ == '__main__':
     spreed = Spreed()
