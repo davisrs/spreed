@@ -37,3 +37,6 @@ nosetests.xml
 
 # text input files
 *.txt
+
+# swap files
+*.swp
