@@ -41,6 +41,7 @@ class Spreed(object):
         # init font
         if pygame.font:
             self.font = pygame.font.Font(None, self.font_size)
+            self.amb_font = pygame.font.Font(None, self.font_size * 2)
         else:
             print("Error!")
             
@@ -56,6 +57,7 @@ class Spreed(object):
         # init state variables
         self.running = True
         self.show_progress = True
+        self.show_ambient = True
         self.pause = True 
         self.word = 0
 
@@ -66,7 +68,7 @@ class Spreed(object):
         # main loop
         while self.running:
             # current percentage of reading
-            percent = int(len(self.words)/100)
+            percent = int(len(self.words) / 100)
 
             # event handling
             for event in pygame.event.get():
@@ -115,13 +117,17 @@ class Spreed(object):
             self.text = self.font.render(self.words[self.word], 1, 
                                          (255, 255, 255))
             self.textpos = self.text.get_rect(
-                                centerx=self.screen.get_width()/2,
-                                centery=self.screen.get_height()/2)
+                                centerx=self.screen.get_width() / 2,
+                                centery=self.screen.get_height() / 2)
             self.screen.blit(self.text, self.textpos)
 
             # draw progress bar
             if self.show_progress:
                 self.draw_progress()
+
+            # draw ambient text symbols
+            if self.show_ambient:
+                self.ambient_text()
 
             # update screen
             pygame.display.flip()
@@ -133,7 +139,7 @@ class Spreed(object):
                 self.pause = True
 
             # advance word
-            if not self.pause and newtime - time > 1000/(self.speed/60):
+            if not self.pause and newtime - time > 1000 / (self.speed / 60):
                 time = pygame.time.get_ticks() 
                 self.word += 1
 
@@ -154,6 +160,15 @@ class Spreed(object):
         # draw the frame
         pygame.draw.rect(self.screen, pygame.Color("white"), outer_rect, 2)
         pygame.draw.rect(self.screen, pygame.Color("white"), inner_rect)
+
+    def ambient_text(self):
+        if self.words[self.word].endswith("?"):
+            symb = self.font.render("?", 1, (255, 255, 255))
+            symb_pos = self.text.get_rect(
+                                centerx = self.screen.get_width() 
+                                        - self.screen.get_width() / 5,
+                                centery = self.screen.get_height() / 2)
+            self.screen.blit(symb, symb_pos)
 
 if __name__ == '__main__':
     spreed = Spreed()
