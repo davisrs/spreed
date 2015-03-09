@@ -170,43 +170,43 @@ class Spreed(object):
                     if event.key == BTN_DPAD_RIGHT:
                         self.word += 1
                     if event.key == BTN_DPAD_UP:
-                        deltaP = (deltaP+10)%100
+                        deltaP = (deltaP+1)%100
                         self.word = percent * deltaP
-                        #print deltaP
+                    #    print deltaP
                     if event.key == BTN_DPAD_DOWN:
-                        deltaP = (deltaP-10)%100
+                        deltaP = (deltaP-1)%100
                         self.word = percent * deltaP
-                        #print deltaP
-                    if event.key == K_0:
-                        deltaP=0
-                        self.word = 0
-                    if event.key == K_1:
-                        deltaP=10
-                        self.word = percent * deltaP 
-                    if event.key == K_2:
-                        deltaP=20
-                        self.word = percent * deltaP
-                    if event.key == K_3:
-                        deltaP=30
-                        self.word = percent * deltaP
-                    if event.key == K_4:
-                        deltaP=40
-                        self.word = percent * deltaP 
-                    if event.key == K_5:
-                        deltaP=50
-                        self.word = percent * deltaP
-                    if event.key == K_6:
-                        deltaP=60
-                        self.word = percent * deltaP
-                    if event.key == K_7:
-                        deltaP=70
-                        self.word = percent * deltaP
-                    if event.key == K_8:
-                        deltaP=80
-                        self.word = percent * deltaP
-                    if event.key == K_9:
-                        deltaP=90
-                        self.word = percent * deltaP
+                    #    print deltaP
+                    #if event.key == K_0:
+                    #    deltaP=0
+                    #    self.word = 0
+                    #if event.key == K_1:
+                    #    deltaP=10
+                    #    self.word = percent * deltaP 
+                    #if event.key == K_2:
+                    #    deltaP=20
+                    #    self.word = percent * deltaP
+                    #if event.key == K_3:
+                    #    deltaP=30
+                    #    self.word = percent * deltaP
+                    #if event.key == K_4:
+                    #    deltaP=40
+                    #    self.word = percent * deltaP 
+                    #if event.key == K_5:
+                    #    deltaP=50
+                    #    self.word = percent * deltaP
+                    #if event.key == K_6:
+                    #    deltaP=60
+                    #    self.word = percent * deltaP
+                    #if event.key == K_7:
+                    #    deltaP=70
+                    #    self.word = percent * deltaP
+                    #if event.key == K_8:
+                    #    deltaP=80
+                    #    self.word = percent * deltaP
+                    #if event.key == K_9:
+                    #    deltaP=90
+                    #    self.word = percent * deltaP
 
             self.word %= len(self.words) # current word is word modulus len(all)
 

@@ -35,8 +35,14 @@ nosetests.xml
 .project
 .pydevproject
 
+# pickle save files
+*.pkl
+
 # text input files
 *.txt
 
 # swap files
 *.swp
+
+# vim editor files
+*~
