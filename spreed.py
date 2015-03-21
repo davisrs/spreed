@@ -89,6 +89,7 @@ class Spreed(object):
         self.show_progress = True
         self.show_ambient = True
         self.pause = True 
+        self.combo = False # used for start button combos
         self.offset = 0
         self.cfg_rskip_tolerance=5
         # gutenflash porting
@@ -123,7 +124,8 @@ class Spreed(object):
                 #print "Chapter: %s (%s)" % (line, len(self.wordlist))
                 self.t[i] = "c"
                 self.chapterPointerList.append(i)
-                print i, self.words[i]
+                #print i, self.words[i] # for debug purposes
+                
                 #self.add_word(stripline, "c")
 
                 #ws = stripline.split()
@@ -133,10 +135,11 @@ class Spreed(object):
                 #continue
             if is_dot:
                 self.t[i] = "."
-                print i, self.words[i]
+                #print i, self.words[i] # for debug purposes
         
         #print self.t
-        print self.chapterPointerList
+        
+        #print self.chapterPointerList # for debug purposes
 
         # Load bookmark pickle file
         firstTime = True
@@ -184,7 +187,11 @@ class Spreed(object):
             # event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: 
-                    self.running = False 
+                    self.running = False
+                if event.type is KEYUP:#check if modifier is releaased to disable combo
+                    if event.key == BTN_START: # "Start + key" combo is finished
+                        print "Combo with start is disabled"
+                        self.combo = False 
                 if event.type is KEYDOWN:
                     if event.key == BTN_SELECT:
                         self.running = False
@@ -213,17 +220,35 @@ class Spreed(object):
                     if event.key == BTN_X:
                         self.speed = defaultSpeed
                     if event.key == BTN_DPAD_LEFT:
-                        self.offset -= 1
+                        if self.combo == False:
+                            self.offset -= 1
+                        else:
+                            print "As a combo: try to go to previous chapter"
+                            self._skip_backward(["c"])
                     if event.key == BTN_DPAD_RIGHT:
-                        self.offset += 1
+                        if self.combo == False:
+                            self.offset += 1
+                        else:
+                            print "As a combo: try to go to next chapter"
+                            self._skip_forward(["c"])
                     if event.key == BTN_DPAD_UP:
-                        deltaP = (deltaP+1)%100
-                        self.offset = percent * deltaP
-                    #    print deltaP
+                        if self.combo == False: # Sentence navigation is now default behavior!
+                            print "non-combo: try to go to previous sentence"
+                            self._skip_backward(["."]) # This is much easier and better than percent navigation!
+                        else:
+                            print "As a combo: increment by 1%" # This old function is now a combo because hitting this by accident does bad things
+                            deltaP = (deltaP+1)%100 # deltaP doesnt take current location into account and is thus based only on its own previous value
+                            self.offset = percent * deltaP # which can make navigation very broken (it's kind of useless actually)
+                            #print deltaP # ie it goes in 1% increments of total length of file offset from start not the current location.
                     if event.key == BTN_DPAD_DOWN:
-                        deltaP = (deltaP-1)%100
-                        self.offset = percent * deltaP
-                    #    print deltaP
+                        if self.combo == False: # Sentence navigation is now default behavior!
+                            print "non-combo: try to go to next sentence"
+                            self._skip_forward(["."]) # This is much easier and better than percent navigation!
+                        else:
+                            print "As a combo: decrement by 1%" # This old function is now a combo because hitting this by accident does bad things
+                            deltaP = (deltaP-1)%100 # deltaP doesnt take current location into account and is thus based only on its own previous value
+                            self.offset = percent * deltaP # which can make navigation very broken (it's kind of useless actually)
+                            #print deltaP # ie it goes in 1% increments of total length of file offset from start not the current location.
                     #if event.key == K_0:
                     #    deltaP=0
                     #    self.offset = 0
@@ -266,6 +291,9 @@ class Spreed(object):
                     if event.key == K_9:
                         print "trying to go to next chapter"
                         self._skip_forward(["c"])
+                    if event.key == BTN_START:
+                        self.combo = True # "Start + key" combo is possible
+                        print "Combo with start is enabled"
 
             self.offset %= len(self.words) # current word is word modulus len(all)
 
@@ -361,9 +389,6 @@ class Spreed(object):
         self.screen.blit(symb, symb_pos)
 
 #################################################
-    def _prev_chapter(self, *args):
-        "Skip forward to the next chapter."
-        self._skip_backward(["c"])
 
     def _skip_forward(self, look=[".", "\n", "c"]):
         "Skip forward to the next <something>"
