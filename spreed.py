@@ -91,7 +91,8 @@ class Spreed(object):
         self.pause = True 
         self.combo = False # used for start button combos
         self.offset = 0
-        self.cfg_rskip_tolerance=5
+        self.cfg_rskip_tolerance = 5
+        self.save_on_exit = True
         # gutenflash porting
         self.chaptertexts = [ # use for determining if a word is a c type
             "CONTENTS",
@@ -108,7 +109,7 @@ class Spreed(object):
             ]
         # assign types to words
         self.t = [" "] * len(self.words) # is a list of letters signifying types
-        self.chapterPointerList = []
+        self.chapterPointerList = [] # for use in eventual go_to_chapter menu?
         for i in range( len(self.words)):
         # Check for chapter headings.
             is_chapter = 0
@@ -194,6 +195,12 @@ class Spreed(object):
                         self.combo = False 
                 if event.type is KEYDOWN:
                     if event.key == BTN_SELECT:
+                        if self.combo == False: # select by itself
+                            print "Will save before exiting"
+                            self.save_on_exit = True
+                        else: # Start + Select
+                            self.save_on_exit = False
+                            print "Do not save upon exiting"
                         self.running = False
                     #if event.key == K_q:
                     #    self.running = False
@@ -201,7 +208,11 @@ class Spreed(object):
                         self.show_progress = not self.show_progress
                         self.show_ambient = not self.show_ambient
                     if event.key == BTN_A:
-                        self.pause = not self.pause
+                        if self.combo == False:
+                            self.pause = not self.pause
+                        else:
+                            print "As a combo: pickle the current location"
+                            self.pickle_Bookmark()
                     if event.key == BTN_B:
                         SCHEME = not SCHEME
                         print SCHEME
@@ -341,12 +352,8 @@ class Spreed(object):
                 self.offset += 1
 
         #Before quiting pickle our location
-        fileName=os.path.splitext(self.file)[0]
-        pickleFileName= fileName+".pkl"
-        pickleFile=open(pickleFileName,'w')#open (or create) a pickle file for writing
-        pickle.dump(self.offset, pickleFile)#pickles our current location
-        pickleFile.close()#close the file
-        print "Current Location Bookmarked in pkl file"
+        if self.save_on_exit == True:
+            self.pickle_Bookmark()
 
         #close pygame
         pygame.quit()
@@ -444,7 +451,14 @@ class Spreed(object):
         #self.show_word(flush=1)
 
 #################################################
-
+    def pickle_Bookmark(self):
+        fileName=os.path.splitext(self.file)[0]
+        pickleFileName= fileName+".pkl"
+        pickleFile=open(pickleFileName,'w')#open (or create) a pickle file for writing
+        pickle.dump(self.offset, pickleFile)#pickles our current location
+        pickleFile.close()#close the file
+        print "Current Location Bookmarked in pkl file"
+#################################################
 if __name__ == '__main__':
     spreed = Spreed()
     spreed.run()
