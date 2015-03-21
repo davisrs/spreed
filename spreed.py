@@ -78,7 +78,7 @@ class Spreed(object):
         f = open(self.file, 'r')
         self.raw_text = f.read()
         f.close() # I can't believe this was missing for so long -- ALWAYS close Files when finished with them
-        self.words = self.raw_text.split()
+        self.words = self.raw_text.split() # words is a list of words split by whitespace
         self.words.append("--- END ---")
 
         # init clock
@@ -89,8 +89,55 @@ class Spreed(object):
         self.show_progress = True
         self.show_ambient = True
         self.pause = True 
-        self.word = 0
+        self.offset = 0
+        self.cfg_rskip_tolerance=5
+        # gutenflash porting
+        self.chaptertexts = [ # use for determining if a word is a c type
+            "CONTENTS",
+            "INDEX",
+            "FOREWORD",
+            "PROLOGUE",
+            "CHAPTER ", "Chapter",
+            "PART", "Part",
+            "BOOK",
+            "SECTION ", "Section",
+            "EPILOGUE",
+            "GLOSSARY",
+            "APPENDIX",
+            ]
+        # assign types to words
+        self.t = [" "] * len(self.words) # is a list of letters signifying types
+        self.chapterPointerList = []
+        for i in range( len(self.words)):
+        # Check for chapter headings.
+            is_chapter = 0
+            is_dot = 0
+            #stripline = line.strip()
+            for c in self.chaptertexts:
+                if self.words[i] == c:
+                    is_chapter = 1
+            for dotChar in '.?!':
+                if self.words[i][-1] == dotChar:#if end of word is a . or ! or ? indicative of a sentence ending
+                    is_dot = 1
+            if is_chapter:
+                #print "Chapter: %s (%s)" % (line, len(self.wordlist))
+                self.t[i] = "c"
+                self.chapterPointerList.append(i)
+                print i, self.words[i]
+                #self.add_word(stripline, "c")
+
+                #ws = stripline.split()
+                #for w in ws:
+                #   self.add_word(w, " ")
+                #self.add_word(".", "\n")
+                #continue
+            if is_dot:
+                self.t[i] = "."
+                print i, self.words[i]
         
+        #print self.t
+        print self.chapterPointerList
+
         # Load bookmark pickle file
         firstTime = True
         fileName=os.path.splitext(self.file)[0]
@@ -102,15 +149,15 @@ class Spreed(object):
             lastWord = pickle.load(pickleFile)#unpickle our current word
             if (lastWord<len(self.words)) and (lastWord>-1):#check if lastWord is valid
                 print "LastWord bookmark is valid: "+str(lastWord)+" < " + str(len(self.words))
-                self.word = lastWord
+                self.offset = lastWord
             else:
                 print "Invalid Bookmark! :"+str(lastWord)+" !< " + str(len(self.words))
-                self.word = 0;
+                self.offset = 0;
             pickleFile.close()#close
             firstTime=False
         #Create one if it doesn't
         pickleFile=open(pickleFileName,'w')#open (or create) a pickle file for writing
-        pickle.dump(self.word,pickleFile)#pickles our current location
+        pickle.dump(self.offset, pickleFile)#pickles our current location
         pickleFile.close()#close the file
         if firstTime:
             print "Created a new bookmark pickle file."
@@ -166,49 +213,61 @@ class Spreed(object):
                     if event.key == BTN_X:
                         self.speed = defaultSpeed
                     if event.key == BTN_DPAD_LEFT:
-                        self.word -= 1
+                        self.offset -= 1
                     if event.key == BTN_DPAD_RIGHT:
-                        self.word += 1
+                        self.offset += 1
                     if event.key == BTN_DPAD_UP:
                         deltaP = (deltaP+1)%100
-                        self.word = percent * deltaP
+                        self.offset = percent * deltaP
                     #    print deltaP
                     if event.key == BTN_DPAD_DOWN:
                         deltaP = (deltaP-1)%100
-                        self.word = percent * deltaP
+                        self.offset = percent * deltaP
                     #    print deltaP
                     #if event.key == K_0:
                     #    deltaP=0
-                    #    self.word = 0
+                    #    self.offset = 0
                     #if event.key == K_1:
                     #    deltaP=10
-                    #    self.word = percent * deltaP 
+                    #    self.offset = percent * deltaP 
                     #if event.key == K_2:
                     #    deltaP=20
-                    #    self.word = percent * deltaP
+                    #    self.offset = percent * deltaP
                     #if event.key == K_3:
                     #    deltaP=30
-                    #    self.word = percent * deltaP
+                    #    self.offset = percent * deltaP
                     #if event.key == K_4:
                     #    deltaP=40
-                    #    self.word = percent * deltaP 
+                    #    self.offset = percent * deltaP 
                     #if event.key == K_5:
                     #    deltaP=50
-                    #    self.word = percent * deltaP
+                    #    self.offset = percent * deltaP
                     #if event.key == K_6:
                     #    deltaP=60
-                    #    self.word = percent * deltaP
+                    #    self.offset = percent * deltaP
                     #if event.key == K_7:
                     #    deltaP=70
-                    #    self.word = percent * deltaP
+                    #    self.offset = percent * deltaP
                     #if event.key == K_8:
                     #    deltaP=80
-                    #    self.word = percent * deltaP
+                    #    self.offset = percent * deltaP
                     #if event.key == K_9:
                     #    deltaP=90
-                    #    self.word = percent * deltaP
+                    #    self.offset = percent * deltaP
+                    if event.key == K_6:
+                        print "trying to go to previous sentence"
+                        self._skip_backward(["."])
+                    if event.key == K_7:
+                        print "trying to go to next sentence"
+                        self._skip_forward(["."])
+                    if event.key == K_8:
+                        print "trying to go to previous chapter"
+                        self._skip_backward(["c"])
+                    if event.key == K_9:
+                        print "trying to go to next chapter"
+                        self._skip_forward(["c"])
 
-            self.word %= len(self.words) # current word is word modulus len(all)
+            self.offset %= len(self.words) # current word is word modulus len(all)
 
             #CHOOSE COLOR SCHEME
             if SCHEME:
@@ -224,7 +283,7 @@ class Spreed(object):
             self.screen.fill((BG_COLOR))
             
             # render text
-            self.text = self.font.render(self.words[self.word], 1, 
+            self.text = self.font.render(self.words[ self.offset ], 1, 
                                          (FG_COLOR))
             self.textpos = self.text.get_rect(
                                 centerx=320 / 2,
@@ -245,30 +304,30 @@ class Spreed(object):
             # get time
             newtime = pygame.time.get_ticks() 
 
-            if self.word == len(self.words) - 1:
+            if self.offset == len(self.words) - 1:
                 self.pause = True
 
             # advance word
             if not self.pause and newtime - time > 1000 / (self.speed / 60):
                 time = pygame.time.get_ticks() 
-                self.word += 1
+                self.offset += 1
 
         #Before quiting pickle our location
         fileName=os.path.splitext(self.file)[0]
         pickleFileName= fileName+".pkl"
         pickleFile=open(pickleFileName,'w')#open (or create) a pickle file for writing
-        pickle.dump(self.word,pickleFile)#pickles our current location
+        pickle.dump(self.offset, pickleFile)#pickles our current location
         pickleFile.close()#close the file
         print "Current Location Bookmarked in pkl file"
 
         #close pygame
         pygame.quit()
-        
+            
     def draw_progress(self):
         # current progress
-        #ratio = self.word / len(self.words)
-        ratio = float(self.word) / len(self.words)
-        #print float(self.word) / len(self.words)
+        #ratio = self.offset / len(self.words)
+        ratio = float(self.offset) / len(self.words)
+        #print float(self.offset) / len(self.words)
 
         # progress bar coordinates
         bar_x = 320 / 10
@@ -285,8 +344,8 @@ class Spreed(object):
         pygame.draw.rect(self.screen, pygame.Color("white"), inner_rect)
 
     def ambient_text(self):#useless
-        percent=(float(self.word) / len(self.words))
-        #ratio=str(float(int( (float(self.word) / len(self.words))*10000))/100.)#Works but formating wrong losing last ie 0 .19,.2,.21
+        percent=(float(self.offset) / len(self.words))
+        #ratio=str(float(int( (float(self.offset) / len(self.words))*10000))/100.)#Works but formating wrong losing last ie 0 .19,.2,.21
         totalTime=len(self.words)/float(self.speed)*(1-percent)
         totalSec=totalTime*60.0
         hours = int(totalSec)/3600
@@ -300,6 +359,66 @@ class Spreed(object):
         symb = self.amb_font.render(speedStr, 1, (0x99, 0x99, 0x67))
         symb_pos = 2,228
         self.screen.blit(symb, symb_pos)
+
+#################################################
+    def _prev_chapter(self, *args):
+        "Skip forward to the next chapter."
+        self._skip_backward(["c"])
+
+    def _skip_forward(self, look=[".", "\n", "c"]):
+        "Skip forward to the next <something>"
+        found = 0
+        self.offset  = self.offset  + 1
+        while not found:
+            if self.offset  >= len(self.words):
+                self.offset  = len(self.words) - 1
+                #word = (self.book.word(self.offset ), self.book.type(self.offset ))
+                ##self.show_word(flush=1)
+                return
+
+                #word = (self.book.word(self.offset ), self.book.type(self.offset ))
+
+            if self.t[self.offset ] in look:
+                found = 1
+                self.offset  = self.offset  + 1
+                ##self.show_word(flush=1)
+                break
+
+            self.offset  = self.offset  + 1
+
+            #word = (self.book.word(self.offset ), self.book.type(self.offset ))
+            
+            #self.show_word(flush=1)
+
+    def _skip_backward(self, look=[".", "\n", "c"]):
+        """Skip back to the previous paragraph.
+        ... or to the beginning of the current one."""
+        found = 0
+
+        # If in the first few words of the paragraph, skip to previous.
+        # Else skip to beginning of current.
+        self.offset  = self.offset  - self.cfg_rskip_tolerance
+        while not found:
+            if self.offset  < 0:
+                self.offset  = 0
+                #word = self.words[self.offset ]
+                ##self.show_word(flush=1)
+                return
+
+            #word = self.words[self.offset ]
+
+            if self.t[self.offset ] in look:
+                found = 1
+                self.offset  = self.offset  + 1
+                ##self.show_word(flush=1)
+                break
+
+            self.offset  = self.offset  - 1
+
+    #word = self.words[self.offset ]
+        #self.show_word(flush=1)
+
+#################################################
 
 if __name__ == '__main__':
     spreed = Spreed()
