@@ -5,6 +5,7 @@ import argparse
 import math
 import pickle
 import os
+import hashlib
 
 from pygame.locals import *
 
@@ -57,22 +58,6 @@ class Spreed(object):
         #self.file = "./README.MD"
         self.speed = args.speed 
         self.font_size = args.font_size
-
-        # init display 
-        #self.size = pygame.display.list_modes()[0]
-        #self.screen = pygame.display.set_mode(self.size, FULLSCREEN)
-        self.screen = pygame.display.set_mode((320, 240), pygame.DOUBLEBUF)
-        pygame.display.set_caption('spreed')
-
-        # turn off the mouse (pointer)
-        pygame.mouse.set_visible(False)
-
-        # init font
-        if pygame.font:
-            self.font = pygame.font.Font(None, self.font_size)
-            self.amb_font = pygame.font.Font(None, self.font_size / 2)
-        else:
-            print("Error!")
             
         # read text
         f = open(self.file, 'r')
@@ -80,9 +65,6 @@ class Spreed(object):
         f.close() # I can't believe this was missing for so long -- ALWAYS close Files when finished with them
         self.words = self.raw_text.split() # words is a list of words split by whitespace
         self.words.append("--- END ---")
-
-        # init clock
-        self.clock = pygame.time.Clock()
 
         # init state variables
         self.running = True
@@ -97,9 +79,9 @@ class Spreed(object):
         self.chaptertexts = [ # use for determining if a word is a c type
             "CONTENTS",
             "INDEX",
-            "FOREWORD",
-            "PROLOGUE",
-            "CHAPTER ", "Chapter",
+            "FOREWORD", "foreword",
+            "PROLOGUE", "Prologue",
+            "CHAPTER ", "Chapter", "Ch.",
             "PART", "Part",
             "BOOK",
             "SECTION ", "Section",
@@ -107,40 +89,12 @@ class Spreed(object):
             "GLOSSARY",
             "APPENDIX",
             ]
-        # assign types to words
-        self.t = [" "] * len(self.words) # is a list of letters signifying types
-        self.chapterPointerList = [] # for use in eventual go_to_chapter menu?
-        for i in range( len(self.words)):
-        # Check for chapter headings.
-            is_chapter = 0
-            is_dot = 0
-            #stripline = line.strip()
-            for c in self.chaptertexts:
-                if self.words[i] == c:
-                    is_chapter = 1
-            for dotChar in '.?!':
-                if self.words[i][-1] == dotChar:#if end of word is a . or ! or ? indicative of a sentence ending
-                    is_dot = 1
-            if is_chapter:
-                #print "Chapter: %s (%s)" % (line, len(self.wordlist))
-                self.t[i] = "c"
-                self.chapterPointerList.append(i)
-                #print i, self.words[i] # for debug purposes
-                
-                #self.add_word(stripline, "c")
-
-                #ws = stripline.split()
-                #for w in ws:
-                #   self.add_word(w, " ")
-                #self.add_word(".", "\n")
-                #continue
-            if is_dot:
-                self.t[i] = "."
-                #print i, self.words[i] # for debug purposes
-        
-        #print self.t
-        
-        #print self.chapterPointerList # for debug purposes
+        self.abbreviations = [ # See these? It isn't the end of a sentence
+            "Dr.", "Mr.", "Mrs.", "Ms.", "Ch."
+            #"A.", "B.", "C.", "D.", "E.", "F.", "G.", "H.",       "J.", "K.",
+            #"L.", "M.", "N.", "O.", "P.", "Q.", "R.", "S.", "T.", "U.", "V.",
+            #"W.", "X.", "Y.", "Z.",
+            ]
 
         # Load bookmark pickle file
         firstTime = True
@@ -165,6 +119,58 @@ class Spreed(object):
         pickleFile.close()#close the file
         if firstTime:
             print "Created a new bookmark pickle file."
+
+        # assign types to words
+        print "assigning types"
+        self.t = [" "] * len(self.words) # is a list of letters signifying types
+        self.chapterPointerList = [] # for use in eventual go_to_chapter menu?
+        for i in range( len(self.words)):
+        # Check for chapter headings.
+            is_chapter = 0
+            is_dot = 0
+            #stripline = line.strip()
+            #for c in self.chaptertexts:
+            #    if self.words[i] == c:
+            #        is_chapter = 1
+            if self.words[i] in self.chaptertexts:
+                is_chapter = 1
+            if self.words[i][-1] in '.!?': # if the last letter is one of these
+                is_dot = 1 # it is at the end of a sentence
+            #for dotChar in '.?!':
+            #    if self.words[i][-1] == dotChar:#if end of word is a . or ! or ? indicative of a sentence ending
+            #        is_dot = 1
+            if is_chapter:
+                #print "Chapter: %s (%s)" % (line, len(self.wordlist))
+                self.t[i] = "c"
+                self.chapterPointerList.append(i)
+                #print i, self.words[i] # for debug purposes
+            if is_dot:
+                self.t[i] = "."
+                #print i, self.words[i] # for debug purposes
+        print "types are now assigned"
+        
+        #print self.t
+        
+        #print self.chapterPointerList # for debug purposes
+
+        # init pygame display 
+        #self.size = pygame.display.list_modes()[0]
+        #self.screen = pygame.display.set_mode(self.size, FULLSCREEN)
+        self.screen = pygame.display.set_mode((320, 240), pygame.DOUBLEBUF)
+        pygame.display.set_caption('spreed')
+
+        # turn off the mouse (pointer)
+        pygame.mouse.set_visible(False)
+
+        # init font
+        if pygame.font:
+            self.font = pygame.font.Font(None, self.font_size)
+            self.amb_font = pygame.font.Font(None, self.font_size / 2)
+        else:
+            print("Error!")
+            
+        # init clock
+        self.clock = pygame.time.Clock()
 
     def run(self):
         # get initial time
@@ -202,8 +208,6 @@ class Spreed(object):
                             self.save_on_exit = False
                             print "Do not save upon exiting"
                         self.running = False
-                    #if event.key == K_q:
-                    #    self.running = False
                     if event.key == BTN_Y:
                         self.show_progress = not self.show_progress
                         self.show_ambient = not self.show_ambient
@@ -277,18 +281,6 @@ class Spreed(object):
                     #    self.offset = percent * deltaP 
                     #if event.key == K_5:
                     #    deltaP=50
-                    #    self.offset = percent * deltaP
-                    #if event.key == K_6:
-                    #    deltaP=60
-                    #    self.offset = percent * deltaP
-                    #if event.key == K_7:
-                    #    deltaP=70
-                    #    self.offset = percent * deltaP
-                    #if event.key == K_8:
-                    #    deltaP=80
-                    #    self.offset = percent * deltaP
-                    #if event.key == K_9:
-                    #    deltaP=90
                     #    self.offset = percent * deltaP
                     if event.key == K_6:
                         print "trying to go to previous sentence"
