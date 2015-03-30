@@ -384,14 +384,18 @@ class Spreed(object):
                     #nowWord = self.words[ self.offset ]
                     # to do:
                     #   check if nowWord is greater than multiword_length [over 16 letters in size]
-                    if len(self.words[ self.offset ]) > self.multiword_length: 
+                    if len(self.words[ self.offset ]) >= self.multiword_length: 
                         # if it is check if it is larger than the screen
                         self.phraseToRender = self.words[ self.offset ]    # set phraseToRender to just that single gigantic word
-                        self.numWordsInPhase = 6          # set numWords to 6 because we need a big delay for this is a gigantic word
+                        self.numWordsInPhase = 4          # set numWords to 4 because we need a big delay for this is a gigantic word
                     else:
                         flush = False
                         while ( flush == False):
-                            if (len(self.phraseToRender) + len(self.words[ self.offset ]) + 1) <= self.multiword_length: # if (old phrase + space + newWord) is less than or equal to 16
+                            if self.offset == len(self.words): # pause at the end of the file
+                                self.pause = True
+                                print self.offset, len(self.words)
+                                flush = True
+                            elif (len(self.phraseToRender) + len(self.words[ self.offset ]) + 1) <= self.multiword_length: # if (old phrase + space + newWord) is less than or equal to 16
                                 self.phraseToRender = self.phraseToRender + " " + self.words[ self.offset ]
                                 self.numWordsInPhrase += 1
                                 self.offset += 1 # grab next word
