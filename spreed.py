@@ -75,13 +75,22 @@ class Spreed(object):
         self.offset = 0
         self.cfg_rskip_tolerance = 5
         self.save_on_exit = True
+        
+        self.multiword_length=16 # default value from gutenflash
+        self.multimode = True # desirable
+        self.numWordsInPhrase = 1 
+        self.phraseToRender = ""
+
+ 
+
+
         # gutenflash porting
         self.chaptertexts = [ # use for determining if a word is a c type
             "CONTENTS",
             "INDEX",
             "FOREWORD", "foreword",
             "PROLOGUE", "Prologue",
-            "CHAPTER ", "Chapter", "Ch.",
+            "CHAPTER ", "Chapter", "Ch.", "Ch.1", 
             "PART", "Part",
             "BOOK",
             "SECTION ", "Section",
@@ -90,7 +99,7 @@ class Spreed(object):
             "APPENDIX",
             ]
         self.abbreviations = [ # See these? It isn't the end of a sentence
-            "Dr.", "Mr.", "Mrs.", "Ms.", "Ch."
+            "Dr.", "Mr.", "Mrs.", "Ms.", "Ch.", 
             #"A.", "B.", "C.", "D.", "E.", "F.", "G.", "H.",       "J.", "K.",
             #"L.", "M.", "N.", "O.", "P.", "Q.", "R.", "S.", "T.", "U.", "V.",
             #"W.", "X.", "Y.", "Z.",
@@ -134,8 +143,9 @@ class Spreed(object):
             #        is_chapter = 1
             if self.words[i] in self.chaptertexts:
                 is_chapter = 1
-            if self.words[i][-1] in '.!?': # if the last letter is one of these
-                is_dot = 1 # it is at the end of a sentence
+            if (self.words[i][-1] in '.!?'): # if the last letter is one of these
+                if (self.words[i] not in self.abbreviations): # and it is not an abbreviation
+                    is_dot = 1 # it is at the end of a sentence
             #for dotChar in '.?!':
             #    if self.words[i][-1] == dotChar:#if end of word is a . or ! or ? indicative of a sentence ending
             #        is_dot = 1
@@ -175,7 +185,7 @@ class Spreed(object):
     def run(self):
         # get initial time
         time = pygame.time.get_ticks() 
-        deltaP =0
+        deltaP = 0
         
         #COLORS
         SCHEME=True
@@ -190,6 +200,7 @@ class Spreed(object):
             # current percentage of reading
             percent = int(len(self.words) / 100)
             #deltaP = (deltaP-10)%100+10
+            
 
             # event handling
             for event in pygame.event.get():
@@ -299,6 +310,7 @@ class Spreed(object):
                         print "Combo with start is enabled"
 
             self.offset %= len(self.words) # current word is word modulus len(all)
+            #grab 1st chunk here
 
             #CHOOSE COLOR SCHEME
             if SCHEME:
@@ -309,13 +321,18 @@ class Spreed(object):
                 FG_COLOR=(0x66, 0x66, 0x66)
                 BG_COLOR=(0xCC, 0xCC, 0x9A)
                 AM_COLOR=(0x99, 0x99, 0x67)
-                
+
+            """
+#old
             # clear screen
             self.screen.fill((BG_COLOR))
             
+            # get Text
+            self.get_phraseToRender()
+
             # render text
-            self.text = self.font.render(self.words[ self.offset ], 1, 
-                                         (FG_COLOR))
+            self.text = self.font.render(self.phraseToRender, 1, 
+                (FG_COLOR))
             self.textpos = self.text.get_rect(
                                 centerx=320 / 2,
                                 centery=240 / 2)
@@ -332,16 +349,75 @@ class Spreed(object):
             # update screen
             pygame.display.flip()
 
+            # pause at the end of the file
+            if self.offset == len(self.words) - 1: 
+                self.pause = True
+
             # get time
             newtime = pygame.time.get_ticks() 
 
-            if self.offset == len(self.words) - 1:
-                self.pause = True
-
-            # advance word
-            if not self.pause and newtime - time > 1000 / (self.speed / 60):
+            # wait until ticks per each word has passed and then advance to the next word/phrase chunk
+            if (not self.pause) and ((newtime - time) > (self.numWordsInPhrase * 60000 / self.speed)):
                 time = pygame.time.get_ticks() 
-                self.offset += 1
+                self.get_phraseToRender()
+                self.offset += 1 # regardless of everything else, grab the next word
+            """
+
+            # clear screen
+            self.screen.fill((BG_COLOR))
+
+            # render text in buffer
+            self.text = self.font.render(self.phraseToRender, 1, 
+                (FG_COLOR))
+            self.textpos = self.text.get_rect(
+                centerx=320 / 2,
+                centery=240 / 2)
+            self.screen.blit(self.text, self.textpos)
+
+            # wait until ticks per each word has passed and then advance to the next word/phrase chunk
+            if (not self.pause) and ((newtime - time) > (self.numWordsInPhrase * 60000 / self.speed)):
+                time = pygame.time.get_ticks()
+                # Decide on word[s] to put in buffer
+                if (self.multimode == True): # if we are in multiword mode
+                    self.numWordsInPhrase = 1 
+                    self.phraseToRender = ""
+                    #nowWord = self.words[ self.offset ]
+                    # to do:
+                    #   check if nowWord is greater than multiword_length [over 16 letters in size]
+                    if len(self.words[ self.offset ]) > self.multiword_length: 
+                        # if it is check if it is larger than the screen
+                        self.phraseToRender = self.words[ self.offset ]    # set phraseToRender to just that single gigantic word
+                        self.numWordsInPhase = 6          # set numWords to 6 because we need a big delay for this is a gigantic word
+                    else:
+                        flush = False
+                        while ( flush == False):
+                            if (len(self.phraseToRender) + len(self.words[ self.offset ]) + 1) <= self.multiword_length: # if (old phrase + space + newWord) is less than or equal to 16
+                                self.phraseToRender = self.phraseToRender + " " + self.words[ self.offset ]
+                                self.numWordsInPhrase += 1
+                                self.offset += 1 # grab next word
+                            else:
+                                flush = True # phrase is fully loaded, end while loop
+                                self.offset -= 1 # unload the most recent word that pushed us over the maxlength
+                else: # else we are in single word mode
+                    self.phraseToRender = self.words[ self.offset ] # just one word
+                    self.numWordsInPhrase = 1 # it is one word long delayed and offset
+                self.offset += 1 # regardless of everything else, grab the next word
+
+            # draw progress bar
+            if self.show_progress:
+                self.draw_progress()
+
+            # draw ambient text symbols
+            if self.show_ambient:
+                self.ambient_text()
+
+            #update screen with buffer
+            pygame.display.flip()
+
+            # get current time
+            newtime = pygame.time.get_ticks() # current time
+        #end new
+
 
         #Before quiting pickle our location
         if self.save_on_exit == True:
@@ -425,22 +501,45 @@ class Spreed(object):
         while not found:
             if self.offset  < 0:
                 self.offset  = 0
-                #word = self.words[self.offset ]
-                ##self.show_word(flush=1)
                 return
-
-            #word = self.words[self.offset ]
-
             if self.t[self.offset ] in look:
                 found = 1
                 self.offset  = self.offset  + 1
-                ##self.show_word(flush=1)
                 break
-
             self.offset  = self.offset  - 1
-
-    #word = self.words[self.offset ]
-        #self.show_word(flush=1)
+    
+    def get_phraseToRender(self):
+        # Decide on word[s] to put in buffer
+        if (self.multimode == True): # if we are in multiword mode
+            self.numWordsInPhrase = 0 
+            self.phraseToRender = ""
+            #nowWord = self.words[ self.offset ]
+            # to do:
+            #   check if nowWord is greater than multiword_length [over 16 letters in size]
+            if len(self.words[ self.offset ]) >= self.multiword_length: 
+                # if it is check if it is larger than the screen
+              self.phraseToRender = self.words[ self.offset ]    # set phraseToRender to just that single gigantic word
+              self.numWordsInPhrase = 6          # set numWords to 6 because we need a big delay for this is a gigantic word
+            else:
+                flush = False
+                while ( flush == False):
+                    if self.offset == len(self.words) - 1: # pause at the end of the file
+                        self.pause = True
+                        print self.offset, len(self.words)
+                        self.offset = 10
+                    else:
+                        if (len(self.phraseToRender) + len(self.words[ self.offset ]) + 1) <= self.multiword_length: # if (old phrase + space + newWord) is less than or equal to 16
+                            self.phraseToRender = self.phraseToRender + " " + self.words[ self.offset ]
+                            self.numWordsInPhrase += 1
+                            self.offset += 1 # grab next word
+                            print self.numWordsInPhrase, self.phraseToRender, len(self.phraseToRender), len(self.words[ self.offset ])
+                        else:
+                            flush = True # phrase is fully loaded, end while loop
+                        self.offset -= 1 # unload the most recent word that pushed us over the maxlength
+        else: # else we are in single word mode
+            self.phraseToRender = self.words[ self.offset ] # just one word
+            self.numWordsInPhrase = 1 # it is one word long delayed and offset
+        #print self.phraseToRender
 
 #################################################
     def pickle_Bookmark(self):
