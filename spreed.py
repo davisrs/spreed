@@ -219,9 +219,15 @@ class Spreed(object):
                             self.save_on_exit = False
                             print "Do not save upon exiting"
                         self.running = False
+                    if event.key == BTN_X:
+                        self.speed = defaultSpeed
                     if event.key == BTN_Y:
-                        self.show_progress = not self.show_progress
-                        self.show_ambient = not self.show_ambient
+                        if self.combo == False:
+                            self.show_progress = not self.show_progress
+                            self.show_ambient = not self.show_ambient
+                        else:
+                            self.multimode = not self.multimode
+                            print "As a combo: multiword setting was changed. Multiword mode Enabled = ", self.multimode
                     if event.key == BTN_A:
                         if self.combo == False:
                             self.pause = not self.pause
@@ -244,8 +250,6 @@ class Spreed(object):
                         else:
                             self.speed += 10
                         #print self.speed
-                    if event.key == BTN_X:
-                        self.speed = defaultSpeed
                     if event.key == BTN_DPAD_LEFT:
                         if self.combo == False:
                             self.offset -= 1
