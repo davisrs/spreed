@@ -9,7 +9,7 @@ import hashlib
 
 from pygame.locals import *
 
-defaultSpeed = 850 #defaultSpeed 450
+defaultSpeed = 600 #defaultSpeed 450
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -347,7 +347,8 @@ class Spreed(object):
                 time = pygame.time.get_ticks()
                 #self.get_phraseToRender()
                 self.offset = self.phrase_offset +1  # regardless of everything else, grab the next word
-                print "numWords:%i \t num letters: %i of 16 \t phrase: %s \t delay: %i ms" % (self.numWordsInPhrase, len(self.phraseToRender), (self.phraseToRender), (self.numWordsInPhrase * 60000 / self.speed))
+                # USEFUL for debugging purposes, the below print statement will display some useful but verbose data on each phrase
+                #print "numWords:%i \t num letters: %i of 16 \t phrase: %s \t delay: %i ms" % (self.numWordsInPhrase, len(self.phraseToRender), (self.phraseToRender), (self.numWordsInPhrase * 60000 / self.speed))
 
             # draw progress bar
             if self.show_progress:
@@ -457,7 +458,7 @@ class Spreed(object):
     def get_phraseToRender(self):
         local_offset = self.offset
         if (self.multimode == True): # if we are in multiword mode
-            self.numWordsInPhrase = 0 
+            self.numWordsInPhrase = 0 # This should be 0, but to be readable you must take an average with the next phrase's delay and use that value for both... honestly just force num words to be 2, since that is the average for max a length of 16 anyway
             self.phraseToRender = ""
             #local_offset = self.offset
             #nowWord = self.words[ self.offset ]
@@ -482,6 +483,13 @@ class Spreed(object):
                     else:
                         flush = True # phrase is fully loaded, end while loop
                         local_offset -= 1 # unload the most recent word that pushed us over the maxlength
+                #########################################################################################
+                #Eventually do the average with the next/previous phrase to make things work perfectly. 
+                # Until then a much faster and easier way to make this work is to just force numWordsInPhrase = 2 since that is
+                # really really really really really close to the average anyway and gives a good delay.
+                if (self.numWordsInPhrase < 4): # if we are not the long word over 16 chars from above
+                    self.numWordsInPhrase = 2   # force num words to be 2, since that is the average for max a length of 16 anyway
+                #########################################################################################
         else: # else we are in single word mode
             self.phraseToRender = self.words[ self.offset ] # just one word
             self.numWordsInPhrase = 1 # it is one word long delayed and offset
