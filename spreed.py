@@ -347,7 +347,7 @@ class Spreed(object):
                 time = pygame.time.get_ticks()
                 #self.get_phraseToRender()
                 self.offset = self.phrase_offset +1  # regardless of everything else, grab the next word
-                
+                print "numWords:%i \t num letters: %i of 16 \t phrase: %s \t delay: %i ms" % (self.numWordsInPhrase, len(self.phraseToRender), (self.phraseToRender), (self.numWordsInPhrase * 60000 / self.speed))
 
             # draw progress bar
             if self.show_progress:
@@ -457,7 +457,7 @@ class Spreed(object):
     def get_phraseToRender(self):
         local_offset = self.offset
         if (self.multimode == True): # if we are in multiword mode
-            self.numWordsInPhrase = 1 
+            self.numWordsInPhrase = 0 
             self.phraseToRender = ""
             #local_offset = self.offset
             #nowWord = self.words[ self.offset ]
@@ -487,6 +487,7 @@ class Spreed(object):
             self.numWordsInPhrase = 1 # it is one word long delayed and offset
         #self.offset = 1 + local_offset # uncomment if change dont work..., regardless of everything else, grab the next word
         self.phrase_offset = local_offset
+        
 
 #################################################
     def pickle_Bookmark(self):
